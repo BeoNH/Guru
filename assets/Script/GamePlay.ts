@@ -9,12 +9,13 @@ export class GamePlay extends Component {
     @property({ type: Node, tooltip: "Map chứa các ô" })
     tileMapLevel: Node = null;
 
-    @property({ type: Node, tooltip: "Danh sách các ô trong khu vực xếp" })
-    tileMatchingList: Node[] = [];
+    @property({ type: Node, tooltip: "Vị trí các ô để hợp nhất" })
+    matchingPosition: Node = null;
 
     // @property({ type: Vec3, tooltip: "Danh sách các vị trí để xếp ô" })
     // slotMatchingArea: Node
-
+    
+    private tileMatchingList: Node[] = []; // Danh sách các ô trong khu vực xếp
     private slotTiles: Node[] = []; // Số lượng các ô được bấm
     private slotPositions: Vec3[] = []; // Số lượng các ô khung chọn
     private numberOfTiles: number; // Số lượng ô còn lại trên màn hình.
@@ -37,12 +38,17 @@ export class GamePlay extends Component {
 
     log() {
         console.log(">>>slotTiles: ", this.slotTiles);
-        console.log(">>>numberOfTiles: ", this.numberOfTiles);
+        console.log(">>>tileMatchingList: ", this.tileMatchingList);
+        console.log(">>>slotPositions: ", this.slotPositions);
+    }
+
+    fakeUpdate() {
+        this.handleTileClick();
     }
 
     // Khởi tạo danh sách vị trí các ô trong `tileMatchingList`
     private initPositions() {
-        this.slotPositions = this.tileMatchingList.map(tile => tile.worldPosition.clone());
+        this.slotPositions = this.matchingPosition.children.map(tile => tile.worldPosition.clone());
     }
 
     // Lấy số lượng ô trong cảnh để khởi tạo `numberOfTiles`
@@ -75,30 +81,22 @@ export class GamePlay extends Component {
 
     //Xử lý sự kiện nhấp chuột vào ô, kiểm tra và di chuyển ô
     private handleTileClick() {
-        if(this.slotTiles.length > 0){
+        if (this.slotTiles.length > 0) {
             const tileNode = this.slotTiles.shift();
-            if (!this.isTileOverlapped(tileNode)) {
-                const validPos = this.getValidPosition(tileNode);
-                if (validPos !== -1) {
-                    if (validPos < this.tileMatchingList.length) {
-                        this.rearrangeMatchingArrayFrom(validPos);
-                    }
-                    this.moveTileToMatchingArea(tileNode, this.slotPositions[validPos]);
-                    this.numberOfTiles--;
-                    this.tileMatchingList.splice(validPos, 0, tileNode);
-                    this.checkMatch(tileNode);
+            const validPos = this.getValidPosition(tileNode);
+            if (validPos !== -1) {
+                if (validPos < this.tileMatchingList.length) {
+                    this.rearrangeMatchingArrayFrom(validPos);
                 }
+                console.log(">>slotPositions: ", this.slotPositions);
+                console.log(">>validPos: ", validPos);
+                this.moveTileToMatchingArea(tileNode, this.slotPositions[validPos]);
+                this.numberOfTiles--;
+                this.tileMatchingList.splice(validPos, 0, tileNode);
+                return;
+                this.checkMatch(tileNode);
             }
         }
-    }
-
-    // Kiểm tra nếu ô bị che khuất bởi ô khác
-    private isTileOverlapped(tile: Node): boolean {
-        const collider = tile.getComponent(Collider2D);
-        if (!collider) return false;
-
-        const otherColliders = PhysicsSystem2D.instance.testAABB(collider.worldAABB);
-        return otherColliders.some(other => other !== collider);
     }
 
     // Tìm vị trí hợp lệ để xếp ô vào khu vực xếp
@@ -113,7 +111,7 @@ export class GamePlay extends Component {
         return count ? tilePos + 1 : this.tileMatchingList.length;
     }
 
-    // Di chuyển các ô trong danh sách để lấp đầy chỗ trống sau hợp nhất
+    // Di chuyển các ô trong danh sách để xếp theo đúng loại
     private rearrangeMatchingArrayFrom(index: number) {
         if (index === 0) return;
         for (let i = this.tileMatchingList.length - 1; i >= index; i--) {
@@ -123,19 +121,18 @@ export class GamePlay extends Component {
 
     // Di chuyển ô vào vị trí cụ thể trong khu vực xếp
     private moveTileToMatchingArea(tile: Node, dest: Vec3) {
-        tile.setPosition(dest);
+        tile.getComponent(Square).moveTileToWPos(dest);
     }
 
     // Kiểm tra nếu có ba ô giống nhau liên tiếp, hợp nhất chúng nếu có
     private checkMatch(tile: Node) {
-        const tileName = tile.name;
         let count = 0;
 
         for (let i = 0; i < this.tileMatchingList.length; i++) {
-            if (this.tileMatchingList[i].name === tileName) {
+            if (this.tileMatchingList[i].name === tile.name) {
                 count++;
                 if (count === 3) {
-                    this.playMatchingAnimation(i - 2, i);
+                    // this.playMatchingAnimation(i - 2, i);
                     this.tileMatchingList.splice(i - 2, 3);
                     this.fillTile();
                     break;
