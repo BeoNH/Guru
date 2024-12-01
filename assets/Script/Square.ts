@@ -1,5 +1,6 @@
 import { _decorator, Collider2D, Component, ERaycast2DType, EventTouch, Node, PhysicsSystem2D, tween, UITransform, v3, Vec2, Vec3 } from 'cc';
 import { GamePlay } from './GamePlay';
+import { GameManager } from './GameManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('Square')
@@ -10,6 +11,9 @@ export class Square extends Component {
     }
     protected start(): void {
         this.isTileOverlapped()
+        this.schedule(() => {
+            this.isTileOverlapped();
+        }, 0.5)
     }
 
     // Sự kiện bấm vào node
@@ -28,15 +32,22 @@ export class Square extends Component {
 
         const isOverLap = otherColliders.some(other => other !== collider && other.node.parent !== this.node.parent && other.node.parent.name > this.node.parent.name);
 
-        if (isOverLap) {
-            this.node.getChildByPath(`DarkenMask`).active = true;
-        }
+        this.node.getChildByPath(`DarkenMask`).active = isOverLap;
     }
 
     // Di chuyển node đến vị trí chỉ định
     moveTileToWPos(wpos: Vec3) {
         tween(this.node)
-            .to(0.3, { worldPosition: wpos })
+            .to(GameManager.timeMove, { worldPosition: wpos, scale: v3(0.65, 0.65) })
+            .start();
+    }
+
+    scaleDestroy() {
+        tween(this.node)
+            .to(1, { scale: Vec3.ZERO })
+            .call(() => {
+                this.node.destroy();
+            })
             .start();
     }
 }

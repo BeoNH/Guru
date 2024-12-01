@@ -1,5 +1,6 @@
 import { _decorator, Component, Node, Vec3, ParticleSystem2D, Input, input, EventTouch, Camera, Collider2D, PhysicsSystem2D } from 'cc';
 import { Square } from './Square';
+import { GameManager } from './GameManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('GamePlay')
@@ -14,7 +15,7 @@ export class GamePlay extends Component {
 
     // @property({ type: Vec3, tooltip: "Danh sách các vị trí để xếp ô" })
     // slotMatchingArea: Node
-    
+
     private tileMatchingList: Node[] = []; // Danh sách các ô trong khu vực xếp
     private slotTiles: Node[] = []; // Số lượng các ô được bấm
     private slotPositions: Vec3[] = []; // Số lượng các ô khung chọn
@@ -69,6 +70,9 @@ export class GamePlay extends Component {
         // Bắt đầu đếm từ `tileMapLevel`
         countChildNodes(this.tileMapLevel);
 
+        let chek = count % 3 === 0 ? "Đủ ô" : "Thiếu ô";
+        console.log(">>>", chek);
+
         return count;
     }
 
@@ -93,8 +97,8 @@ export class GamePlay extends Component {
                 this.moveTileToMatchingArea(tileNode, this.slotPositions[validPos]);
                 this.numberOfTiles--;
                 this.tileMatchingList.splice(validPos, 0, tileNode);
-                return;
                 this.checkMatch(tileNode);
+                return;
             }
         }
     }
@@ -132,7 +136,7 @@ export class GamePlay extends Component {
             if (this.tileMatchingList[i].name === tile.name) {
                 count++;
                 if (count === 3) {
-                    // this.playMatchingAnimation(i - 2, i);
+                    this.playMatchingAnimation(i - 2, i);
                     this.tileMatchingList.splice(i - 2, 3);
                     this.fillTile();
                     break;
@@ -145,8 +149,9 @@ export class GamePlay extends Component {
     private playMatchingAnimation(startIndex: number, endIndex: number) {
         for (let i = startIndex; i <= endIndex; i++) {
             const tile = this.tileMatchingList[i];
-            tile.setScale(Vec3.ZERO);
-            tile.destroy();
+            this.scheduleOnce(() => {
+                tile.getComponent(Square).scaleDestroy();
+            }, GameManager.timeMove);
         }
     }
 
