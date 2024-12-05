@@ -26,7 +26,7 @@ export class GamePlay extends Component {
         GamePlay.Instance = this;
 
         this.initPositions();
-        this.numberOfTiles = this.getTilesCount();
+        // this.numberOfTiles = GameManager.numberOfTiles;
     }
 
     // Kiểm tra các điều kiện thua/thắng mỗi khung hình
@@ -50,30 +50,6 @@ export class GamePlay extends Component {
     // Khởi tạo danh sách vị trí các ô trong `tileMatchingList`
     private initPositions() {
         this.slotPositions = this.matchingPosition.children.map(tile => tile.worldPosition.clone());
-    }
-
-    // Lấy số lượng ô trong cảnh để khởi tạo `numberOfTiles`
-    private getTilesCount(): number {
-        let count = 0;
-
-        // Đệ quy tiếp tục duyệt qua các node
-        const countChildNodes = (node: Node) => {
-            node.children.forEach(child => {
-                if (child.getComponent(Square)) {
-                    count++;
-                }
-
-                countChildNodes(child);
-            });
-        };
-
-        // Bắt đầu đếm từ `tileMapLevel`
-        countChildNodes(this.tileMapLevel);
-
-        let chek = count % 3 === 0 ? "Đủ ô" : "Thiếu ô";
-        console.log(">>>", chek);
-
-        return count;
     }
 
     // Hàm thêm node vào `slotTiles`
