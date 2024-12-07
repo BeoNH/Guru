@@ -44,6 +44,7 @@ export class GamePlay extends Component {
     }
 
     fakeUpdate() {
+        // this.schedule(() => { this.fillTile(); }, 1)
         this.handleTileClick();
     }
 
@@ -68,15 +69,15 @@ export class GamePlay extends Component {
                 if (validPos < this.tileMatchingList.length) {
                     this.rearrangeMatchingArrayFrom(validPos);
                 }
-                console.log(">>slotPositions: ", this.slotPositions);
-                console.log(">>validPos: ", validPos);
                 this.moveTileToMatchingArea(tileNode, this.slotPositions[validPos]);
                 this.numberOfTiles--;
                 this.tileMatchingList.splice(validPos, 0, tileNode);
                 this.checkMatch(tileNode);
+                // this.fillTile();
                 return;
             }
         }
+        this.checkWinCondition();
     }
 
     // Tìm vị trí hợp lệ để xếp ô vào khu vực xếp
@@ -114,7 +115,7 @@ export class GamePlay extends Component {
                 if (count === 3) {
                     this.playMatchingAnimation(i - 2, i);
                     this.tileMatchingList.splice(i - 2, 3);
-                    this.fillTile();
+                    // this.fillTile();
                     break;
                 }
             }
@@ -133,8 +134,9 @@ export class GamePlay extends Component {
 
     // Lấp đầy khu vực xếp khi ô hợp nhất bị xóa
     private fillTile() {
+        console.log(">>>>>fill")
         this.tileMatchingList.forEach((tile, index) => {
-            tile.setPosition(this.slotPositions[index]);
+            tile.setWorldPosition(this.slotPositions[index]);
         });
     }
 
