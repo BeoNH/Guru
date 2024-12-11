@@ -22,7 +22,7 @@ export class Level extends Component {
         if (GameManager.numberOfTiles % this.groupSize === 0) {
             this.assignImagesToNodes();
         } else {
-            console.warn('Số lượng ô không đủ.');
+            console.warn('Số lượng ô không đủ.', GameManager.numberOfTiles);
         }
     }
 

@@ -6,6 +6,8 @@ const { ccclass, property } = _decorator;
 @ccclass('Square')
 export class Square extends Component {
 
+    private isMove: boolean = false;
+
     onLoad() {
         this.node.on(Node.EventType.TOUCH_END, this.onNodeClicked, this);
     }
@@ -38,13 +40,14 @@ export class Square extends Component {
     // Di chuyển node đến vị trí chỉ định
     moveTileToWPos(wpos: Vec3) {
         tween(this.node)
+            .call(() => { this.node.getComponent(Collider2D).enabled = false })
             .to(GameManager.timeMove, { worldPosition: wpos, scale: v3(0.65, 0.65) })
             .start();
     }
 
     scaleDestroy() {
         tween(this.node)
-            .to(1, { scale: Vec3.ZERO })
+            .to(0.3, { scale: Vec3.ZERO })
             .call(() => {
                 this.node.destroy();
             })

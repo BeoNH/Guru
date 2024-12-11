@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3, ParticleSystem2D, Input, input, EventTouch, Camera, Collider2D, PhysicsSystem2D } from 'cc';
+import { _decorator, Component, Node, Vec3, ParticleSystem2D, Input, input, EventTouch, Camera, Collider2D, PhysicsSystem2D, resources, Prefab, instantiate } from 'cc';
 import { Square } from './Square';
 import { GameManager } from './GameManager';
 const { ccclass, property } = _decorator;
@@ -16,6 +16,8 @@ export class GamePlay extends Component {
     // @property({ type: Vec3, tooltip: "Danh sách các vị trí để xếp ô" })
     // slotMatchingArea: Node
 
+    private listLevels: Prefab[] = []; // Danh sách các level trong game
+    private level: Node = null; // Level hiện tại
     private tileMatchingList: Node[] = []; // Danh sách các ô trong khu vực xếp
     private slotTiles: Node[] = []; // Số lượng các ô được bấm
     private slotPositions: Vec3[] = []; // Số lượng các ô khung chọn
@@ -26,26 +28,70 @@ export class GamePlay extends Component {
         GamePlay.Instance = this;
 
         this.initPositions();
-        // this.numberOfTiles = GameManager.numberOfTiles;
+        this.loadMapLevel()
+            .then(() => {
+                this.resetGame();
+            })
+            .catch(err => {
+                console.error("Không thể load danh sách level:\n", err);
+            });
     }
 
     // Kiểm tra các điều kiện thua/thắng mỗi khung hình
     update() {
-        // if (this.matchArrayIsFull()) {
-        //     console.log("Level lost.");
-        // }
-        // this.checkWinCondition();
+
     }
 
     log() {
         console.log(">>>slotTiles: ", this.slotTiles);
         console.log(">>>tileMatchingList: ", this.tileMatchingList);
         console.log(">>>slotPositions: ", this.slotPositions);
+        console.log(">>>numberOfTiles: ", this.numberOfTiles);
     }
 
     fakeUpdate() {
-        // this.schedule(() => { this.fillTile(); }, 1)
-        this.handleTileClick();
+        this.resetGame();
+    }
+
+    // Đặt lại mặc định sau mỗi phiêu chơi
+    private resetGame() {
+        if (this.level) {
+            this.level.destroy();
+            this.level = null;
+        }
+        this.randomLevel();
+        this.numberOfTiles = GameManager.numberOfTiles;
+    }
+
+    // Khởi tạo danh sách các cấp có sẵn trong resources
+    private loadMapLevel(): Promise<void> {
+        const folderPath = 'Prefab/level';
+
+        return new Promise((resolve, reject) => {
+            resources.loadDir(folderPath, Prefab, (err, listPrf) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                this.listLevels = listPrf;
+                resolve();
+            });
+        });
+    }
+
+    // Hàm trả về ngẫu nhiên 1 level
+    private randomLevel() {
+        if (!this.listLevels || this.listLevels.length === 0) {
+            console.warn('Danh sách level rỗng hoặc chưa được load.');
+            return;
+        }
+
+        const randomIndex = Math.floor(Math.random() * this.listLevels.length);
+        const levelNode = instantiate(this.listLevels[randomIndex]);
+        this.level = levelNode;
+        this.tileMapLevel.addChild(levelNode);
+
     }
 
     // Khởi tạo danh sách vị trí các ô trong `tileMatchingList`
@@ -58,12 +104,17 @@ export class GamePlay extends Component {
         if (this.slotTiles.some(t => t === tile)) return;
 
         this.slotTiles.push(tile);
+        this.handleTileClick();
     }
 
     //Xử lý sự kiện nhấp chuột vào ô, kiểm tra và di chuyển ô
     private handleTileClick() {
         if (this.slotTiles.length > 0) {
             const tileNode = this.slotTiles.shift();
+            if (this.matchArrayIsFull()) {
+                console.log("WAIT");
+                return;
+            }
             const validPos = this.getValidPosition(tileNode);
             if (validPos !== -1) {
                 if (validPos < this.tileMatchingList.length) {
@@ -73,11 +124,9 @@ export class GamePlay extends Component {
                 this.numberOfTiles--;
                 this.tileMatchingList.splice(validPos, 0, tileNode);
                 this.checkMatch(tileNode);
-                // this.fillTile();
                 return;
             }
         }
-        this.checkWinCondition();
     }
 
     // Tìm vị trí hợp lệ để xếp ô vào khu vực xếp
@@ -115,10 +164,14 @@ export class GamePlay extends Component {
                 if (count === 3) {
                     this.playMatchingAnimation(i - 2, i);
                     this.tileMatchingList.splice(i - 2, 3);
-                    // this.fillTile();
                     break;
                 }
             }
+        }
+
+        if (this.matchArrayIsFull()) {
+            console.log("WAIT_2");
+            return;
         }
     }
 
@@ -128,21 +181,22 @@ export class GamePlay extends Component {
             const tile = this.tileMatchingList[i];
             this.scheduleOnce(() => {
                 tile.getComponent(Square).scaleDestroy();
+                this.fillTile();
+                this.checkWinCondition();
             }, GameManager.timeMove);
         }
     }
 
     // Lấp đầy khu vực xếp khi ô hợp nhất bị xóa
     private fillTile() {
-        console.log(">>>>>fill")
         this.tileMatchingList.forEach((tile, index) => {
-            tile.setWorldPosition(this.slotPositions[index]);
+            this.moveTileToMatchingArea(tile, this.slotPositions[index]);
         });
     }
 
     // Kiểm tra nếu khu vực xếp đã đầy
     private matchArrayIsFull(): boolean {
-        return this.tileMatchingList.length >= 7;
+        return this.tileMatchingList.length >= this.slotPositions.length;
     }
 
 
