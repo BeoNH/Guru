@@ -1,4 +1,4 @@
-import { _decorator, Component, Node } from 'cc';
+import { _decorator, Camera, Component, find, Node, ResolutionPolicy, view } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('Guru')
@@ -11,6 +11,9 @@ export class Guru extends Component {
     protected onLoad(): void {
         this.sceneMenu.active = true;
         this.scenePlay.active = false;
+
+        view.setDesignResolutionSize(1920, 1080, ResolutionPolicy.FIXED_HEIGHT | ResolutionPolicy.FIXED_WIDTH);
+        find(`Canvas`).getComponentInChildren(Camera).orthoHeight = 535;
     }
 
     openMenu() {
