@@ -2,6 +2,7 @@ import { _decorator, Component, Node, Vec3, ParticleSystem2D, Input, input, Even
 import { Square } from './Square';
 import { GameManager } from './GameManager';
 import { NumberScrolling } from './NumberScrolling';
+import { AudioController } from './AudioController';
 const { ccclass, property } = _decorator;
 
 @ccclass('GamePlay')
@@ -124,6 +125,7 @@ export class GamePlay extends Component {
 
     //Xử lý sự kiện nhấp chuột vào ô, kiểm tra và di chuyển ô
     private handleTileClick() {
+        AudioController.Instance.Pick();
         if (this.slotTiles.length > 0) {
             const tileNode = this.slotTiles.shift();
             if (this.matchArrayIsFull()) {
@@ -198,15 +200,18 @@ export class GamePlay extends Component {
         for (let i = startIndex; i <= endIndex; i++) {
             const tile = this.tileMatchingList[i];
             if(tile){
-                console.log(">>>>>>>>>>",tile)
                 this.scheduleOnce(() => {
                     tile.getComponent(Square).scaleDestroy();
                     this.fillTile();
                 }, GameManager.timeMove);
             }
         }
-        this.score += GameManager.scorePlus;
-        this.score_label.to(this.score);
+
+        this.scheduleOnce(()=>{
+            AudioController.Instance.Eat();
+            this.score += GameManager.scorePlus;
+            this.score_label.to(this.score);
+        }, GameManager.timeMove)
     }
 
     // Lấp đầy khu vực xếp khi ô hợp nhất bị xóa

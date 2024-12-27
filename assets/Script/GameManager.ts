@@ -10,5 +10,3 @@ export class GameManager extends Component {
 
     public static numberOfTiles: number = 0;
 }
-
-
