@@ -1,8 +1,9 @@
-import { _decorator, Component, Node, Vec3, ParticleSystem2D, Input, input, EventTouch, Camera, Collider2D, PhysicsSystem2D, resources, Prefab, instantiate } from 'cc';
+import { _decorator, Component, Node, Vec3, resources, Prefab, instantiate, v3, tween, Label } from 'cc';
 import { Square } from './Square';
 import { GameManager } from './GameManager';
 import { NumberScrolling } from './NumberScrolling';
 import { AudioController } from './AudioController';
+import { Level } from './Level';
 const { ccclass, property } = _decorator;
 
 @ccclass('GamePlay')
@@ -51,7 +52,7 @@ export class GamePlay extends Component {
             .then(() => {
                 this.resetGame();
                 this.score = 0;
-                this.score_label.to(this.score);
+                this.score_label.setValue(this.score);
             })
             .catch(err => {
                 console.error("Không thể load danh sách level:\n", err);
@@ -66,13 +67,23 @@ export class GamePlay extends Component {
     }
 
     // Đặt lại mặc định sau mỗi phiêu chơi
-    private resetGame() {
-        this.randomLevel();
-        this.numberOfTiles = GameManager.numberOfTiles;
-        this.tileMatchingList = [];
-        this.slotTiles = [];
-        this.popupGameover.active = false;
-        this.matchingArr.removeAllChildren();
+    private async resetGame() {
+        try {
+            this.tileMatchingList = [];
+            this.slotTiles = [];
+            this.unscheduleAllCallbacks();        
+            this.popupGameover.active = false;
+            this.popupGameover.getChildByPath(`nextLevel`).active = false;
+            this.popupGameover.getChildByPath(`gameOver`).active = false;
+            this.matchingArr.removeAllChildren();
+
+            // Load level mới
+            await this.randomLevel();
+        } catch (error) {
+            console.error('Lỗi khi reset game:', error);
+            // Có thể thêm xử lý fallback ở đây
+            
+        }
     }
 
     // Khởi tạo danh sách các cấp có sẵn trong resources
@@ -93,21 +104,30 @@ export class GamePlay extends Component {
     }
 
     // Hàm trả về ngẫu nhiên 1 level
-    private randomLevel() {
+    private async randomLevel() {
         if (!this.listLevels || this.listLevels.length === 0) {
-            console.warn('Danh sách level rỗng hoặc chưa được load.');
-            return;
+            throw new Error('Danh sách level rỗng hoặc chưa được load.');
         }
 
         if (this.level) {
             this.level.destroy();
             this.level = null;
         }
+
+        // Chọn và tạo level mới
         const randomIndex = Math.floor(Math.random() * this.listLevels.length);
         const levelNode = instantiate(this.listLevels[randomIndex]);
         this.level = levelNode;
-        this.tileMapLevel.addChild(levelNode);
 
+        try {
+            await this.level.getComponent(Level).initLevel();
+            this.tileMapLevel.addChild(levelNode);
+            this.numberOfTiles = this.level.getComponent(Level).numberOfTiles;
+        } catch (error) {
+            this.level.destroy();
+            this.level = null;
+            throw error;
+        }
     }
 
     // Khởi tạo danh sách vị trí các ô trong `tileMatchingList`
@@ -145,6 +165,7 @@ export class GamePlay extends Component {
                 return;
             }
         }
+
     }
 
     // Tìm vị trí hợp lệ để xếp ô vào khu vực xếp
@@ -237,10 +258,53 @@ export class GamePlay extends Component {
 
     gameOver(isOver: boolean){
         this.popupGameover.active = true;
-        this.popupGameover.getChildByPath(`btnHome`).active = isOver;
-        this.popupGameover.getChildByPath(`btnReset`).active = !isOver;
+        let gameOver = this.popupGameover.getChildByPath(`gameOver`);
+        let nextLevel = this.popupGameover.getChildByPath(`nextLevel`);
+        gameOver.active = isOver;
+        nextLevel.active = !isOver;
+        this.showPopup(isOver ? gameOver : nextLevel);
+
+        if (!isOver) {
+            this.startCountdown();
+        }
     }
 
+    // Chạy hiệu ứng hiện popup
+    private showPopup(node){
+        node.scale = v3(0.01,0.01,0.01)
+        tween(node)
+        .to(0.3, {scale: v3(1,1,1)}, { easing: 'backOut' })
+        .call(() => {
+            tween(node)
+                .to(0.08, { scale: v3(0.83,0.83,1) })
+                .to(0.08, { scale: v3(1,1,1) })
+                .to(0.08, { scale: v3(0.93,0.93,1) })
+                .to(0.08, { scale: v3(1,1,1)})
+                .start();
+        })
+        .start()
+    }
+
+    private startCountdown() {
+        let cd = GameManager.countdownTime;
+        this.updateCountdownLabel(cd);
+        
+        this.schedule(() => {
+            cd--;
+            this.updateCountdownLabel(cd);
+            
+            if (cd <= 0) {
+                this.resetGame();
+            }
+        }, 1, GameManager.countdownTime - 1);
+    }
+
+    private updateCountdownLabel(cd: number) {
+        let countdownLabel = this.popupGameover.getChildByPath(`nextLevel/numCountDown`);
+        if (countdownLabel) {
+            countdownLabel.getComponent(Label).string = cd.toString();
+        }
+    }
 }
 
 

@@ -11,7 +11,7 @@ export class AudioController extends Component {
     private iconMusic: Node = null;
 
     volumeS = 1;
-    volumeM = 1;
+    volumeM = 0.3;
 
     protected onLoad(): void {
         AudioController.Instance = this;
@@ -23,7 +23,7 @@ export class AudioController extends Component {
     }
 
     ClickMusic() {
-        this.volumeM == 1 ? this.volumeM = 0 : this.volumeM = 1;
+        this.volumeM == 0.3 ? this.volumeM = 0 : this.volumeM = 0.3;
         this.node.children[0].getComponent(AudioSource).volume = this.volumeM;
     }
 

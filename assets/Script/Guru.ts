@@ -1,5 +1,11 @@
 import { _decorator, Camera, Component, find, Node, ResolutionPolicy, view } from 'cc';
+import { DEBUG } from 'cc/env';
 const { ccclass, property } = _decorator;
+
+
+if (!DEBUG) {
+    console.log = function () { };
+}
 
 @ccclass('Guru')
 export class Guru extends Component {
