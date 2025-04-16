@@ -9,52 +9,86 @@ export class Level extends Component {
     @property({ type: CCInteger, range: [1, 20, 1], slide: true, tooltip: "Số lượng loại được load" })
     tileCountConfig: number = 5;
 
-    private imageFruirt: SpriteFrame[] = []; // Danh sách các ảnh hoa quả
+    private imageFruits: SpriteFrame[] = []; // Danh sách các ảnh hoa quả
+    private fruitIndex: number = 0;
     private tileList: Node[][] = []; // Mảng 2 chiều chứa các ô
-    private readonly groupSize: number = 3; // Nhóm số lượng tile mỗi lần gán ảnh
-    private readonly numberOfTilesGroup: number = 9; // Số lượng tile mỗi lần gắn ảnh
+    private readonly GROUP_SIZE: number = 3; // Nhóm số lượng tile mỗi lần gán ảnh
+    private readonly TILES_PER_GROUP: number = 15; // Số lượng tile mỗi lần gắn ảnh
 
     public numberOfTiles: number = 0;
 
-    // Load ảnh hoa quả, đếm số lượng ô và gắn ảnh
-    public initLevel(): Promise<void> {
+    /**
+     * Khởi tạo level - hàm chính để bắt đầu game
+     * Load ảnh hoa quả, thiết lập và phân phối các ô
+     * @returns Promise<void>
+     */
+    public async initLevel(): Promise<void> {
+        try {
+            const assets = await this.loadFruits();
+            this.setupFruits(assets);
+            await this.setupTiles();
+        } catch (error) {
+            console.error('Lỗi khi khởi tạo level:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Load các ảnh hoa quả từ thư mục resources
+     * @returns Promise<SpriteFrame[]> - Danh sách các sprite frame của hoa quả
+     */
+    private loadFruits(): Promise<SpriteFrame[]> {
         return new Promise((resolve, reject) => {
             resources.loadDir('Fruits', SpriteFrame, (err, assets) => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-
-                const newAssets = this.shuffleArray([...assets]);
-                const maxTypes = Math.min(this.tileCountConfig, assets.length);
-                this.imageFruirt = newAssets.slice(0, maxTypes);
-
-
-                this.numberOfTiles = this.getTilesCount();
-                if (this.numberOfTiles % this.groupSize === 0) {
-                    while (this.tileList.length > 0) {
-                        let array = this.tileList.splice(0, 1)[0];
-                        this.assignImagesToNodes(array);
-                    }
-                } else {
-                    console.warn('Số lượng ô không đủ.', this.numberOfTiles);
-                }
-                resolve();
+                if (err) reject(err);
+                else resolve(assets);
             });
         });
     }
 
+    /**
+     * Thiết lập danh sách hoa quả sẽ sử dụng trong level
+     * @param assets - Danh sách các sprite frame đã load
+     */
+    private setupFruits(assets: SpriteFrame[]): void {
+        const shuffledAssets = this.shuffleArray([...assets]);
+        const maxTypes = Math.min(this.tileCountConfig, assets.length);
+        this.imageFruits = shuffledAssets.slice(0, maxTypes);
+    }
 
-    // Đếm số lượng ô (Tiles) trong scene
+    /**
+     * Thiết lập và phân phối các ô trong level
+     * Kiểm tra số lượng ô có đủ để tạo thành các nhóm hay không
+     */
+    private async setupTiles(): Promise<void> {
+        this.numberOfTiles = this.getTilesCount();
+        
+        if (this.numberOfTiles % this.GROUP_SIZE !== 0) {
+            console.warn('Số lượng ô không đủ.', this.numberOfTiles);
+            return;
+        }
+
+        while (this.tileList.length > 0) {
+            const tileGroup = this.tileList.shift();
+            if (tileGroup) {
+                this.assignImagesToNodes(tileGroup);
+            }
+        }
+    }
+
+    /**
+     * Đếm số lượng ô (Tiles) trong scene và tổ chức thành mảng 2 chiều
+     * @returns number - Tổng số ô trong level
+     */
     private getTilesCount(): number {
         let count = 0;
         this.tileList = [];
 
-        // Đệ quy
-        const collectTiles = (node: Node) => {
-            node.children.forEach(child => {
+        //Đệ quy
+        const collectTiles = (node: Node): void => {
+            for (const child of node.children) {
                 if (child.getComponent(Square)) {
-                    const row = Math.floor(count / this.numberOfTilesGroup);
+                    const row = Math.floor(count / this.TILES_PER_GROUP);
                     if (!this.tileList[row]) {
                         this.tileList[row] = [];
                     }
@@ -62,50 +96,63 @@ export class Level extends Component {
                     count++;
                 }
                 collectTiles(child);
-            });
+            }
         };
 
         collectTiles(this.node);
         return count;
     }
 
-    // Gán ảnh ngẫu nhiên cho từng nhóm ô
-    private assignImagesToNodes(array: Node[]): void {
-        let currentFruitIndex = 0;
-
-        while (array.length >= this.groupSize) {
-            const fruit = this.imageFruirt[currentFruitIndex];
-            currentFruitIndex = (currentFruitIndex + 1) % this.imageFruirt.length;
+    /**
+     * Phân phối ảnh cho các nhóm ô
+     * @param tiles - Danh sách các ô cần gán ảnh
+     */
+    private assignImagesToNodes(tiles: Node[]): void {
+        console.log(">>>>1", tiles.length);
+        while (tiles.length >= this.GROUP_SIZE) {
+            const fruit = this.imageFruits[this.fruitIndex];
+            this.fruitIndex = (this.fruitIndex + 1) % this.imageFruits.length;
+            console.log(">>>>3",fruit.name, this.fruitIndex);
             if (!fruit) break;
-
-            this.assignImageToGroup(fruit, array);
+            this.assignImageToGroup(fruit, tiles);
         }
+        console.log(">>>>2", tiles.length);
     }
 
-    // Gán ảnh cho một nhóm tile
-    private assignImageToGroup(spriteFrame: SpriteFrame, array: Node[]): void {
-        array = this.shuffleArray(array);
+    /**
+     * Gán ảnh cho một nhóm ô cụ thể
+     * @param spriteFrame - Ảnh cần gán
+     * @param tiles - Danh sách các ô trong nhóm
+     */
+    private assignImageToGroup(spriteFrame: SpriteFrame, tiles: Node[]): void {
+        this.shuffleArray(tiles);
 
-        console.log(">>>>1", array.length);
-        for (let i = 0; i < this.groupSize; i++) {
-            const randomIndex = Math.floor(Math.random() * array.length);
-            const tile = array.splice(randomIndex, 1)[0];
-
+        for (let i = 0; i < this.GROUP_SIZE; i++) {
+            const randomIndex = Math.floor(Math.random() * tiles.length);
+            const tile = tiles.splice(randomIndex, 1)[0];
+            
             const spriteNode = tile.getChildByName('TileImage');
-            spriteNode.getComponent(Sprite).spriteFrame = spriteFrame;
-
+            if (spriteNode) {
+                const sprite = spriteNode.getComponent(Sprite);
+                if (sprite) {
+                    sprite.spriteFrame = spriteFrame;
+                }
+            }
+            
             tile.name = spriteFrame.name || 'Unnamed';
         }
-        console.log(">>>>2", array.length);
     }
 
-    // Xáo trộn mảng
+    /**
+     * Xáo trộn mảng theo thuật toán Fisher-Yates
+     * @param array - Mảng cần xáo trộn
+     * @returns T[] - Mảng đã được xáo trộn
+     */
     private shuffleArray<T>(array: T[]): T[] {
-        const newArray = [...array];
-        for (let i = newArray.length - 1; i > 0; i--) {
+        for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            [array[i], array[j]] = [array[j], array[i]];
         }
-        return newArray;
+        return array;
     }
 }

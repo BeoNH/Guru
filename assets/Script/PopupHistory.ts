@@ -11,7 +11,7 @@ export class PopupHistory extends Component {
     protected itemHis: Node = null;
 
     // Khởi tạo bảng
-    // initHistoryList() {
+    initHistoryList() {
     //     const url = `/imageToWord/getHistory`;
     //     const data = {
     //         "username": APIManager.userDATA?.username,
@@ -19,7 +19,6 @@ export class PopupHistory extends Component {
     //     };
     //     APIManager.requestData(`POST`, url, data, res => {
     //         if (!res) {
-    //             UIControler.instance.onMess(`${url} => ${res}`);
     //             return;
     //         }
 
@@ -51,7 +50,7 @@ export class PopupHistory extends Component {
     //             pool[k].active = false;
     //         }
     //     });
-    // }
+    }
 
 
     // Cấu hình lại Ngày hiện thị

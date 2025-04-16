@@ -17,7 +17,7 @@ export class PopupRank extends Component {
     protected itemBXH: Node = null;
 
     // Khởi tạo bảng
-    // initRankingList() {
+    initRankingList() {
     //     const url = `/imageToWord/getRankList`;
     //     const data = {
     //         "username": APIManager.userDATA?.username,
@@ -25,7 +25,6 @@ export class PopupRank extends Component {
     //     };
     //     APIManager.requestData(`POST`, url, data, res => {
     //         if (!res) {
-    //             UIControler.instance.onMess(`${url} => ${res}`);
     //             return;
     //         }
     
@@ -77,7 +76,7 @@ export class PopupRank extends Component {
     //         // this.playerRank.getChildByPath("playerTime").getComponent(Label).string = res.yourInfo.numTime + "s";
     //         this.playerRank.getChildByPath("playerScore").getComponent(Label).string = res.yourInfo.numScore;
     //     });
-    // }
+    }
     
     // Giới hạn text không quá dài
     private limitName(name: string): string {
