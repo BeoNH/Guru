@@ -1,4 +1,5 @@
 import { _decorator, Component, instantiate, Label, Node } from 'cc';
+import { APIManager } from './APIManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('PopupHistory')
@@ -12,44 +13,44 @@ export class PopupHistory extends Component {
 
     // Khởi tạo bảng
     initHistoryList() {
-    //     const url = `/imageToWord/getHistory`;
-    //     const data = {
-    //         "username": APIManager.userDATA?.username,
-    //         // "username": "beonh123",
-    //     };
-    //     APIManager.requestData(`POST`, url, data, res => {
-    //         if (!res) {
-    //             return;
-    //         }
+        const url = `/getHistory`;
+        const data = {
+            "username": APIManager.userDATA?.username,
+            // "username": "beonh123",
+        };
+        APIManager.requestData(url, data, res => {
+            if (!res) {
+                return;
+            }
 
-    //         const listHis = res.history; // mảng dữ liệu lịch sử
+            const listHis = res.history; // mảng dữ liệu lịch sử
 
-    //         // Số lượng item cho phần còn lại
-    //         const pool = this.layoutHistory.children;
+            // Số lượng item cho phần còn lại
+            const pool = this.layoutHistory.children;
 
-    //         // Duyệt qua số lượng item cần hiển thị
-    //         for (let i = 0; i < listHis.length; i++) {
-    //             let item: Node;
-    //             if (i < pool.length) {
-    //                 item = pool[i];
-    //                 item.active = true;
-    //             } else {
-    //                 item = instantiate(this.itemHis);
-    //                 item.parent = this.layoutHistory;
-    //                 item.active = true;
-    //             }
+            // Duyệt qua số lượng item cần hiển thị
+            for (let i = 0; i < listHis.length; i++) {
+                let item: Node;
+                if (i < pool.length) {
+                    item = pool[i];
+                    item.active = true;
+                } else {
+                    item = instantiate(this.itemHis);
+                    item.parent = this.layoutHistory;
+                    item.active = true;
+                }
 
-    //             // Cập nhật thông tin cho item
-    //             item.getChildByPath("txtDate").getComponent(Label).string = this.formatDate(listHis[i].date);
-    //             // item.getChildByPath("txtTime").getComponent(Label).string = listHis[i].numTime + "s";
-    //             item.getChildByPath("txtScore").getComponent(Label).string = listHis[i].numScore;
-    //         }
+                // Cập nhật thông tin cho item
+                item.getChildByPath("txtDate").getComponent(Label).string = this.formatDate(listHis[i].date);
+                // item.getChildByPath("txtTime").getComponent(Label).string = listHis[i].numTime + "s";
+                item.getChildByPath("txtScore").getComponent(Label).string = listHis[i].numScore;
+            }
 
-    //         // Ẩn đi những item dư thừa
-    //         for (let k = listHis.length; k < pool.length; k++) {
-    //             pool[k].active = false;
-    //         }
-    //     });
+            // Ẩn đi những item dư thừa
+            for (let k = listHis.length; k < pool.length; k++) {
+                pool[k].active = false;
+            }
+        });
     }
 
 

@@ -4,6 +4,7 @@ import { GameManager } from './GameManager';
 import { NumberScrolling } from './NumberScrolling';
 import { AudioController } from './AudioController';
 import { Level } from './Level';
+import { APIManager } from './APIManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('GamePlay')
@@ -71,7 +72,7 @@ export class GamePlay extends Component {
         try {
             this.tileMatchingList = [];
             this.slotTiles = [];
-            this.unscheduleAllCallbacks();        
+            this.unscheduleAllCallbacks();
             this.popupGameover.active = false;
             this.popupGameover.getChildByPath(`nextLevel`).active = false;
             this.popupGameover.getChildByPath(`gameOver`).active = false;
@@ -82,7 +83,7 @@ export class GamePlay extends Component {
         } catch (error) {
             console.error('Lỗi khi reset game:', error);
             // Có thể thêm xử lý fallback ở đây
-            
+
         }
     }
 
@@ -147,12 +148,12 @@ export class GamePlay extends Component {
     private handleTileClick() {
         AudioController.Instance.Pick();
         if (this.slotTiles.length > 0) {
-            const tileNode = this.slotTiles.shift();
             if (this.matchArrayIsFull()) {
                 console.log("over");
                 this.gameOver(true);
                 return;
             }
+            const tileNode = this.slotTiles.shift();
             const validPos = this.getValidPosition(tileNode);
             if (validPos !== -1) {
                 if (validPos < this.tileMatchingList.length) {
@@ -220,7 +221,7 @@ export class GamePlay extends Component {
     private playMatchingAnimation(startIndex: number, endIndex: number) {
         for (let i = startIndex; i <= endIndex; i++) {
             const tile = this.tileMatchingList[i];
-            if(tile){
+            if (tile) {
                 this.scheduleOnce(() => {
                     tile.getComponent(Square).scaleDestroy();
                     this.fillTile();
@@ -228,7 +229,9 @@ export class GamePlay extends Component {
             }
         }
 
-        this.scheduleOnce(()=>{
+        this.ChallengeBatta(this.tileMatchingList[startIndex].name);
+
+        this.scheduleOnce(() => {
             AudioController.Instance.Eat();
             this.score += GameManager.scorePlus;
             this.score_label.to(this.score);
@@ -256,7 +259,7 @@ export class GamePlay extends Component {
         }
     }
 
-    gameOver(isOver: boolean){
+    gameOver(isOver: boolean) {
         this.popupGameover.active = true;
         let gameOver = this.popupGameover.getChildByPath(`gameOver`);
         let nextLevel = this.popupGameover.getChildByPath(`nextLevel`);
@@ -266,33 +269,73 @@ export class GamePlay extends Component {
 
         if (!isOver) {
             this.startCountdown();
+        }else{
+            this.logSaveScore()
+        }
+    }
+
+
+    // Lưu lại thông tin lên tren batta
+    private logSaveScore() {
+        const url = `/saveScore`;
+        const data = {
+            "username": APIManager.userDATA?.username,
+            "score": this.score,
+            "time": 0
+        };
+        APIManager.requestData(url, data, res => {
+            console.log("Kết thúc game => Gửi server:", data, res);
+        });
+    }
+
+    private ChallengeBatta(name: string) {
+        console.log(name);
+        switch (name) {
+            case `cam`:
+                APIManager.logChallenge(`guruOrange30`, 3);
+                break;
+            case `le`:
+                APIManager.logChallenge(`guruPear30`, 3);
+                break;
+            case `tao`:
+                APIManager.logChallenge(`guruApple30`, 3);
+                break;
+            case `nho`:
+                APIManager.logChallenge(`guruGrape30`, 3);
+                break;
+            case `oi`:
+                APIManager.logChallenge(`guruGuava30`, 3);
+                break;
+            case `luu`:
+                APIManager.logChallenge(`guruPomegranate 30`, 3);
+                break;
         }
     }
 
     // Chạy hiệu ứng hiện popup
-    private showPopup(node){
-        node.scale = v3(0.01,0.01,0.01)
+    private showPopup(node) {
+        node.scale = v3(0.01, 0.01, 0.01)
         tween(node)
-        .to(0.3, {scale: v3(1,1,1)}, { easing: 'backOut' })
-        .call(() => {
-            tween(node)
-                .to(0.08, { scale: v3(0.83,0.83,1) })
-                .to(0.08, { scale: v3(1,1,1) })
-                .to(0.08, { scale: v3(0.93,0.93,1) })
-                .to(0.08, { scale: v3(1,1,1)})
-                .start();
-        })
-        .start()
+            .to(0.3, { scale: v3(1, 1, 1) }, { easing: 'backOut' })
+            .call(() => {
+                tween(node)
+                    .to(0.08, { scale: v3(0.83, 0.83, 1) })
+                    .to(0.08, { scale: v3(1, 1, 1) })
+                    .to(0.08, { scale: v3(0.93, 0.93, 1) })
+                    .to(0.08, { scale: v3(1, 1, 1) })
+                    .start();
+            })
+            .start()
     }
 
     private startCountdown() {
         let cd = GameManager.countdownTime;
         this.updateCountdownLabel(cd);
-        
+
         this.schedule(() => {
             cd--;
             this.updateCountdownLabel(cd);
-            
+
             if (cd <= 0) {
                 this.resetGame();
             }

@@ -11,9 +11,10 @@ export class Level extends Component {
 
     private imageFruits: SpriteFrame[] = []; // Danh sách các ảnh hoa quả
     private fruitIndex: number = 0;
-    private tileList: Node[][] = []; // Mảng 2 chiều chứa các ô
+    // private tileList: Node[][] = []; // Mảng 2 chiều chứa các ô
+    private tileList: Node[] = []; // Mảng chứa các ô
     private readonly GROUP_SIZE: number = 3; // Nhóm số lượng tile mỗi lần gán ảnh
-    private readonly TILES_PER_GROUP: number = 15; // Số lượng tile mỗi lần gắn ảnh
+    // private readonly TILES_PER_GROUP: number = 15; // Số lượng tile mỗi lần gắn ảnh
 
     public numberOfTiles: number = 0;
 
@@ -68,11 +69,15 @@ export class Level extends Component {
             return;
         }
 
+        // while (this.tileList.length > 0) {
+        //     const tileGroup = this.tileList.shift();
+        //     if (tileGroup) {
+        //         this.assignImagesToNodes(tileGroup);
+        //     }
+        // }
+
         while (this.tileList.length > 0) {
-            const tileGroup = this.tileList.shift();
-            if (tileGroup) {
-                this.assignImagesToNodes(tileGroup);
-            }
+            this.assignImagesToNodes(this.tileList);
         }
     }
 
@@ -85,14 +90,24 @@ export class Level extends Component {
         this.tileList = [];
 
         //Đệ quy
+        // const collectTiles = (node: Node): void => {
+        //     for (const child of node.children) {
+        //         if (child.getComponent(Square)) {
+        //             const row = Math.floor(count / this.TILES_PER_GROUP);
+        //             if (!this.tileList[row]) {
+        //                 this.tileList[row] = [];
+        //             }
+        //             this.tileList[row].push(child);
+        //             count++;
+        //         }
+        //         collectTiles(child);
+        //     }
+        // };
+
         const collectTiles = (node: Node): void => {
             for (const child of node.children) {
                 if (child.getComponent(Square)) {
-                    const row = Math.floor(count / this.TILES_PER_GROUP);
-                    if (!this.tileList[row]) {
-                        this.tileList[row] = [];
-                    }
-                    this.tileList[row].push(child);
+                    this.tileList.push(child);
                     count++;
                 }
                 collectTiles(child);
@@ -108,15 +123,12 @@ export class Level extends Component {
      * @param tiles - Danh sách các ô cần gán ảnh
      */
     private assignImagesToNodes(tiles: Node[]): void {
-        console.log(">>>>1", tiles.length);
         while (tiles.length >= this.GROUP_SIZE) {
             const fruit = this.imageFruits[this.fruitIndex];
             this.fruitIndex = (this.fruitIndex + 1) % this.imageFruits.length;
-            console.log(">>>>3",fruit.name, this.fruitIndex);
             if (!fruit) break;
             this.assignImageToGroup(fruit, tiles);
         }
-        console.log(">>>>2", tiles.length);
     }
 
     /**
