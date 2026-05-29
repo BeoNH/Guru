@@ -26,6 +26,9 @@ export class GamePlay extends Component {
     @property({ type: Node, tooltip: "Popup Gameover" })
     private popupGameover: Node = null;
 
+    @property({ type: Node, tooltip: "Popup ExitGame" })
+    private popupExitGame: Node = null;
+
     // @property({ type: Vec3, tooltip: "Danh sách các vị trí để xếp ô" })
     // slotMatchingArea: Node
 
@@ -73,6 +76,7 @@ export class GamePlay extends Component {
             this.tileMatchingList = [];
             this.slotTiles = [];
             this.unscheduleAllCallbacks();
+            this.popupExitGame.active = false;
             this.popupGameover.active = false;
             this.popupGameover.getChildByPath(`nextLevel`).active = false;
             this.popupGameover.getChildByPath(`gameOver`).active = false;
@@ -259,6 +263,10 @@ export class GamePlay extends Component {
         }
     }
 
+    exitGame() {
+        this.popupExitGame.active = true;
+    }
+
     gameOver(isOver: boolean) {
         this.popupGameover.active = true;
         let gameOver = this.popupGameover.getChildByPath(`gameOver`);
@@ -269,14 +277,16 @@ export class GamePlay extends Component {
 
         if (!isOver) {
             this.startCountdown();
-        }else{
+        } else {
             this.logSaveScore()
         }
     }
 
 
     // Lưu lại thông tin lên tren batta
-    private logSaveScore() {
+    logSaveScore() {
+        if (this.score <= 0) return;
+        
         const url = `/saveScore`;
         const data = {
             "username": APIManager.userDATA?.username,
